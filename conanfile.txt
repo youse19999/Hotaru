@@ -1,0 +1,10 @@
+[requires]
+meson/1.10.2
+directx-headers/1.619.1
+pybind11/2.11.1
+glfw/3.4
+[generators]
+CMakeDeps
+CMakeToolchain
+[layout]
+cmake_layout
