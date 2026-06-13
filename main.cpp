@@ -2,30 +2,21 @@
 #include "header/observer.h"
 #include <console.h>
 #include <window.h>
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
-
-//一個しか存在できないからuniqueptr
+#include<gpu.h>
 std::unique_ptr<Console> console;
 std::unique_ptr<Window> window;
+std::unique_ptr<HotaruGPU> gpu;
 Subject<std::string> subject;
 
-bool ShouldClose(){
-    return window->ShouldClose();
-}
-void CreateConsole() {
-    console->CreateConsole();
-    subject.notify("CONSOLE CRAETED");
-}
-void GenWindow() {
+//テスト用
+int main()
+{
     window = std::make_unique<Window>();
+    console->CreateConsole();
     window->GenWindow();
-    subject.notify("WINDOW CRAETED");
-}
-//PYTHONのバインド
-PYBIND11_MODULE(Hotaru, m) {
-    m.def("should_close", &ShouldClose, "");
-    m.def("create_console", &CreateConsole, "");
-    m.def("create_window", &GenWindow, "");
+    gpu->CreateGPU();
+    while (true)
+    {
+        window->ShouldClose();
+    }
 }

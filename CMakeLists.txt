@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 4.3)
 
+
 include(FetchContent)
 
 project(Hotaru CXX)
-project(HotaruTest CXX)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
@@ -11,8 +11,8 @@ else()
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
-
 set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(FILAMENT_DIR "L:/FuckSchool/Hotaru/filament")
 
@@ -31,8 +31,9 @@ link_directories(${FILAMENT_LIB_DIR})
 find_package(pybind11 CONFIG REQUIRED)
 find_package(DirectX-Headers REQUIRED)
 find_package(glfw3)
+find_package(imgui REQUIRED)
 
-pybind11_add_module(Hotaru  
+add_executable(Hotaru  
 main.cpp
 header/observer.h
 header/console.h 
@@ -41,60 +42,54 @@ header/window.h
 source/window.cpp
 header/gpu.h
 header/webgpu.h
-source/gpu.cpp)
+filagui/src/ImGuiExtensions.cpp
+filagui/src/ImGuiHelper.cpp)
 
-add_executable(HotaruTest  
-test.cpp
-header/observer.h
-header/console.h
-source/console.cpp
-header/window.h
-source/window.cpp
-header/gpu.h
-header/webgpu.h
-source/gpu.cpp)
-
-
-target_include_directories(Hotaru PRIVATE header)
+target_include_directories(Hotaru PRIVATE header filagui/include)
 
 target_link_libraries(Hotaru PUBLIC pybind11::module
-    glfw
-    filament
+    abseil
     backend
-    utils
-    geometry
-    smol-v
-    filaflat
-    image
-    # WebGPU(Dawn)やVulkanなどのバックエンドを動かすために必要なOS標準ライブラリ
-    gdi32
-    user32
-    opengl32
-    shlwapi
+    basis_transcoder
     bluegl
     bluevk
+    camutils
+    civetweb
+    dracodec
     filabridge
-    zstd
-)
-
-target_include_directories(HotaruTest PRIVATE header header/webgpu)
-
-target_link_libraries(HotaruTest PUBLIC 
-    glfw
-    filament
-    backend
-    utils
-    geometry
-    smol-v
     filaflat
+    filamat
+    filament-generatePrefilterMipmap
+    filament-iblprefilter
+    filament
+    filameshio
+    geometry
+    getopt
+    matdbg
+    gltfio
+    gltfio_core
+    ibl-lite
+    ibl
     image
-    # WebGPU(Dawn)やVulkanなどのバックエンドを動かすために必要なOS標準ライブラリ
-    gdi32
-    user32
-    opengl32
-    shlwapi
-    bluegl
-    bluevk
-    filabridge
-    zstd
+    imagediff
+    imageio-lite
+    ktxreader
+    matdbg
+    matp
+    meshoptimizer
+    mikktspace
+    perfetto
+    shaders
+    smol-v
+    stb
+    uberarchive
+    uberzlib
+    utils
+    viewer
+    utils
+    glfw
+    Shlwapi
+    imgui::imgui
 )
+
+target_precompile_headers(Hotaru PRIVATE "header/filament_pch.h")
