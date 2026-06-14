@@ -16,4 +16,5 @@ struct HotaruENT
 	Entity entity;
 	HotaruENTFactoryType factoryType;
 	LightManager::Type lightType;
+	float animationTime;
 };

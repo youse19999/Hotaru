@@ -1,5 +1,6 @@
 #define NOMINMAX
 #include <vector>
+#include <chrono>
 #include <fstream>
 #include <window.h>
 #include <filagui/ImGuiHelper.h>
@@ -38,7 +39,9 @@ std::unordered_map<std::string, Entity> entities;
 filament::View* imguiView;
 filagui::ImGuiHelper* imguiHelper;
 
-float deltaTime = 1.0f / 60.0f;
+float deltaTime = 0;
+
+auto lastFrameTime = std::chrono::high_resolution_clock::now();
 
 void OnSize(HWND hwnd, UINT flag, int width, int height)
 {
@@ -62,6 +65,19 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 */
 bool Window::Render(WindowContext& context)
 {
+    /*
+    デルタタイム計算
+    */
+    auto currentFrameTime = std::chrono::high_resolution_clock::now();
+
+    deltaTime = std::chrono::duration<float>(currentFrameTime - lastFrameTime).count();
+
+    deltaTime = std::min(deltaTime, 0.1f);
+
+    lastFrameTime = currentFrameTime;
+    /*
+    glfw処理
+    */
     glfwPollEvents();
 
     int width, height;
@@ -73,14 +89,22 @@ bool Window::Render(WindowContext& context)
 
     camera->setProjection(45.0, static_cast<double>(width) / height, 0.1, 100.0);
 
+    /*
+    最小化されてるか確認
+    */
+    int iconified = glfwGetWindowAttrib(window, GLFW_ICONIFIED);
+
+    if (iconified == GLFW_TRUE) {
+        return false;
+    }
     imguiHelper->setDisplaySize(width, height);
 
     /*
     位置の設定の表示
     */
 
-    imguiHelper->render(deltaTime, [&](filament::Engine* engine, filament::View* view) {
-        ImGui::Begin("Filament UI");
+    imguiHelper->render(1.0f / 60.0, [&](filament::Engine* engine, filament::View* view) {
+        ImGui::Begin("Entity List");
         for (auto& entity : context.entities)
         {
             if (entity_windows.count(entity.first) == 1)
@@ -108,8 +132,35 @@ bool Window::Render(WindowContext& context)
         }
         ImGui::End();
 
-        ImGui::Begin("Camera");
+        ImGui::Begin("DBG");
         ImGui::Text(std::format("X: {}, Y: {}, Z: {}", camera->getPosition().x, camera->getPosition().y, camera->getPosition().z).c_str());
+        ImGui::Text(std::format("dt: {}",deltaTime).c_str());
+        ImGui::End();
+
+        ImGui::Begin("ANIM");
+        //ゲーム内処理
+        for (auto& entity : context.entities)
+        {
+            //初期化されてないなら
+            if (entity.second.animationTime < -1)
+            {
+                entity.second.animationTime = 0;
+            }
+            SetTransform(entity.second);
+            //アニメーション再生
+            if (entity.second.factoryType == HotaruENTFactoryType::Model){
+                auto instance = entity.second.asset->getInstance();
+                gltfio::Animator* animator = instance->getAnimator();
+
+                if (animator->getAnimationCount() > 0) {
+                    animator->applyAnimation(1, entity.second.animationTime);
+                    animator->updateBoneMatrices();
+                    ImGui::Text(std::format("{} t: {}", entity.first, entity.second.animationTime).c_str());
+                }
+
+                entity.second.animationTime += deltaTime;
+            }
+        }
         ImGui::End();
     });
 
@@ -117,11 +168,6 @@ bool Window::Render(WindowContext& context)
         renderer->render(view);
         renderer->render(imguiView);
         renderer->endFrame();
-    }
-
-    for (auto entity : context.entities)
-    {
-        SetTransform(entity.second);
     }
 
     return glfwWindowShouldClose(window);
@@ -282,7 +328,7 @@ void Window::GenWindow(WindowContext& context)
             file.read(reinterpret_cast<char*>(buffer.data()), size);
 
             //assetを割り当て
-            entity.second.asset = assetLoader->createAsset(buffer.data(), buffer.size());
+            entity.second.asset = assetLoader->createAsset(buffer.data(), buffer.size());\
 
             //リソースの位置を決定。
             ResourceConfiguration resConfig;

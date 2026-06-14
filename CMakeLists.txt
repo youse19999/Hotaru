@@ -14,8 +14,8 @@ endif()
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(FILAMENT_DIR "./filament")
-set(PHYSX_DIR "./physx")
+set(FILAMENT_DIR "filament")
+set(PHYSX_DIR "physx")
 
 include_directories("${FILAMENT_DIR}/include")
 

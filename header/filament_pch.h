@@ -27,6 +27,7 @@ HotaruStructures
 #include <utils/EntityManager.h>
 #include <filament/Viewport.h>
 #include <filament/RenderableManager.h>
+#include <gltfio/Animator.h>
 
 
 using namespace filament;
