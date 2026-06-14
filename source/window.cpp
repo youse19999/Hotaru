@@ -270,6 +270,11 @@ void Window::GenWindow(WindowContext& context)
             std::streamsize size = file.tellg();
             file.seekg(0, std::ios::beg);
 
+            if (size == -1)
+            {
+                ObserverManager::getInstance().GetLogSubject().notify(entity.second.gltfPath + " IS NOT FOUND");
+            }
+
             //ここで読み込み失敗してると、-1をアロケートして失敗する。
             std::vector<uint8_t> buffer(size);
 

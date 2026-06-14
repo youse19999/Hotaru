@@ -71,9 +71,7 @@ int main()
     while (loop)
     {
         window->SetTransform(context.entities["camera"], window->GetCamera()->getEntity());
-
-        std::move(context.entities["monkey"]).scale = float3(1, 1, 1);
-        //std::move(context.entities["monkey"]).position -= float3(0, 0, 0.01f);
+        std::move(context.entities["monkey"]).rotation -= float3(0, 0, 0.01f);
         loop = !window->Render(context);
     }
     window->Destroy();

@@ -14,9 +14,12 @@ endif()
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(FILAMENT_DIR "L:/FuckSchool/Hotaru/filament")
+set(FILAMENT_DIR "./filament")
+set(PHYSX_DIR "./physx")
 
 include_directories("${FILAMENT_DIR}/include")
+
+include_directories("${PHYSX_DIR}/include")
 
 string(TOUPPER "${CMAKE_BUILD_TYPE}" UPPERCASE_BUILD_TYPE)
 
@@ -26,7 +29,13 @@ else()
 set(FILAMENT_LIB_DIR "${FILAMENT_DIR}/lib/x86_64/mtd")
 endif()
 
+
+
+set(PHYSX_LIB_DIR "${PHYSX_DIR}/lib")
+
 link_directories(${FILAMENT_LIB_DIR})
+
+link_directories(${PHYSX_LIB_DIR})
 
 find_package(pybind11 CONFIG REQUIRED)
 find_package(DirectX-Headers REQUIRED)
@@ -93,6 +102,8 @@ target_link_libraries(Hotaru PUBLIC pybind11::module
     glfw
     Shlwapi
     imgui::imgui
+	carb
+	ovphysx
 )
 
 target_precompile_headers(Hotaru PRIVATE "header/filament_pch.h")
