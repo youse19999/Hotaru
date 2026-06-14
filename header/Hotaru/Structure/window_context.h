@@ -1,4 +1,4 @@
-
+#pragma once
 #include <filament_pch.h>
 
 struct WindowContext {
@@ -6,5 +6,5 @@ struct WindowContext {
 	int width;
 	int height;
 	filament::math::float4 color;
-	std::vector<HotaruENT> entities;
+	std::unordered_map<std::string, HotaruENT> entities;
 };

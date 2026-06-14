@@ -2,7 +2,8 @@
 #include "header/observer.h"
 #include <console.h>
 #include <window.h>
-#include<gpu.h>
+#include <gpu.h>
+#include <command.h>
 std::unique_ptr<Console> console;
 std::unique_ptr<Window> window;
 std::unique_ptr<HotaruGPU> gpu;
@@ -29,13 +30,10 @@ int main()
     HotaruENT ent3;
     ent3.gltfPath = "gltf/Girl.glb";
 
-    ent2.position = float3(0, 0, -5);
-    ent2.scale = float3(1,1,1);
-
     //ここで所有権が移ってしまうよ
-    context.entities.push_back(std::move(ent));
-    context.entities.push_back(std::move(ent2));
-    context.entities.push_back(std::move(ent3));
+    context.entities["monkey"] = std::move(ent);
+    context.entities["duck"] = std::move(ent2);
+    context.entities["girl"] = std::move(ent3);
 
     window->GenWindow(context);
 
@@ -43,6 +41,8 @@ int main()
 
     while (loop)
     {
+        std::move(context.entities["duck"]).scale = float3(1, 1, 1);
+        std::move(context.entities["duck"]).position -= float3(0, 0, 0.01f);
         loop = !window->Render(context);
     }
     window->Destroy();

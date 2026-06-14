@@ -1,4 +1,4 @@
-
+#pragma once
 #include <filament_pch.h>
 struct HotaruENT
 {

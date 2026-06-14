@@ -42,6 +42,7 @@ header/window.h
 source/window.cpp
 header/gpu.h
 header/webgpu.h
+header/command.h
 filagui/src/ImGuiExtensions.cpp
 filagui/src/ImGuiHelper.cpp
 header/Hotaru/Structure/hotaru_ent.h
