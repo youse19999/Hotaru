@@ -5,6 +5,18 @@
 #include <Windows.h>
 #include <memory>
 #include <observer.h>
+#include <filament_pch.h>
+
+#include <Hotaru/Structure/hotaru_ent.h>
+#include <Hotaru/Structure/window_context.h>
+
+using namespace filament;
+using namespace utils;
+using namespace filament::gltfio;
+using namespace filament::math;
+
+
+
 /**
  * @class Window
  * @brief ウィンドウの制御をする
@@ -16,7 +28,7 @@ public:
 	* @PY IN process_window
 	ウィンドウプロシージャを処理する。
 	*/
-	bool ShouldClose();
+	bool Render(WindowContext& context);
 	/*
 	* @PY IN create_game
 	* ウィンドウを作成する。
@@ -24,8 +36,9 @@ public:
 	static void error_callback(int error, const char* description) {
 		std::cerr << description << "\n";
 	}
-	void GenWindow();
-	~Window();
+	void GenWindow(WindowContext& context);
+	void Destroy();
+	void SetTransform(HotaruENT& hotaruEnt);
 
 	GLFWwindow* window;
 };

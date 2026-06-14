@@ -2,14 +2,8 @@
 #include <vector>
 #include <fstream>
 #include <window.h>
-#include <filament_pch.h>
 #include <filagui/ImGuiHelper.h>
 #include <imgui.h>
-
-using namespace filament;
-using namespace utils;
-using namespace filament::gltfio;
-using namespace filament::math;
 
 extern "C" {
     extern const uint8_t UBERARCHIVE_PACKAGE[];
@@ -32,6 +26,11 @@ Camera* camera;
 Renderer* renderer;
 SwapChain* swapChain;
 Engine* engine;
+Scene* scene;
+
+std::unordered_map<std::string, bool> entity_windows;
+
+std::vector<Entity> entities;
 
 filament::View* imguiView;
 filagui::ImGuiHelper* imguiHelper;
@@ -56,9 +55,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 }
 
 /*
-ウィンドウプロシージャを処理する。
+レンダリングをする。
 */
-bool Window::ShouldClose()
+bool Window::Render(WindowContext& context)
 {
     glfwPollEvents();
 
@@ -73,10 +72,36 @@ bool Window::ShouldClose()
 
     imguiHelper->setDisplaySize(width, height);
 
-    imguiHelper->render(deltaTime, [](filament::Engine* engine, filament::View* view) {
+    /*
+    位置の設定の表示
+    */
+
+    imguiHelper->render(deltaTime, [&](filament::Engine* engine, filament::View* view) {
         ImGui::Begin("Filament UI");
-        ImGui::Text("Hello, Filament with ImGui!");
-        if (ImGui::Button("Click Me")) {
+        for (HotaruENT& entity : context.entities)
+        {
+            if (entity_windows.count(entity.gltfPath) == 1)
+            {
+                ImGui::Checkbox(entity.gltfPath.c_str(), &entity_windows[entity.gltfPath.c_str()]);
+                if (entity_windows[entity.gltfPath.c_str()]) {
+                    std::string entity_label = entity.gltfPath;
+                    ImGui::Text("position");
+                    ImGui::SliderFloat((entity_label + ("_p_x")).c_str(), &entity.position.x, -50.0f, 50.0f);
+                    ImGui::SliderFloat((entity_label + ("_p_y")).c_str(), &entity.position.y, -50.0f, 50.0f);
+                    ImGui::SliderFloat((entity_label + ("_p_z")).c_str(), &entity.position.z, -50.0f, 50.0f);
+                    ImGui::Text("rotation");
+                    ImGui::SliderFloat((entity_label + ("_r_x")).c_str(), &entity.rotation.x, -6.28f, 6.28f);
+                    ImGui::SliderFloat((entity_label + ("_r_y")).c_str(), &entity.rotation.y, -6.28f, 6.28f);
+                    ImGui::SliderFloat((entity_label + ("_r_z")).c_str(), &entity.rotation.z, -6.28f, 6.28f);
+                    ImGui::Text("scale");
+                    ImGui::SliderFloat((entity_label + ("_s_x")).c_str(), &entity.scale.x, -5.0f, 5.0f);
+                    ImGui::SliderFloat((entity_label + ("_s_y")).c_str(), &entity.scale.y, -5.0f, 5.0f);
+                    ImGui::SliderFloat((entity_label + ("_s_z")).c_str(), &entity.scale.z, -5.0f, 5.0f);
+                }
+            }
+            else {
+                entity_windows[entity.gltfPath] = false;
+            }
         }
         ImGui::End();
     });
@@ -87,13 +112,35 @@ bool Window::ShouldClose()
         renderer->endFrame();
     }
 
+    for (HotaruENT& entity : context.entities)
+    {
+        SetTransform(entity);
+    }
+
+
+    for (HotaruENT& entity : context.entities) {
+        entity.position.z -= 0.1f;
+    }
     return glfwWindowShouldClose(window);
 }
 
+//マウスの移動のコールバック
+void mouse_pos_callback(GLFWwindow* window, double xpos, double ypos) {
+    ImGuiIO& io = ImGui::GetIO();
+    io.MousePos = ImVec2((float)xpos, (float)ypos);
+}
+
+// マウスボタンの更新コールバック
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+    ImGuiIO& io = ImGui::GetIO();
+    if (button >= 0 && button < ImGuiMouseButton_COUNT) {
+        io.MouseDown[button] = (action == GLFW_PRESS);
+    }
+}
 /*
 ウィンドウを作成
 */
-void Window::GenWindow()
+void Window::GenWindow(WindowContext& context)
 {
     //glfwのエラーのコールバック設定
     glfwSetErrorCallback(error_callback);
@@ -113,7 +160,7 @@ void Window::GenWindow()
 
     ObserverManager::getInstance().GetLogSubject().notify("CREATING GLFW WINDOW");
     //glfwウィンドウ作成
-    window = glfwCreateWindow(800, 600, "WebGPU Triangle", nullptr, nullptr);
+    window = glfwCreateWindow(context.width, context.height, context.window.c_str(), nullptr, nullptr);
     if (!window) {
         //glfw停止
         ObserverManager::getInstance().GetLogSubject().notify("WINDOW WAS DEAD");
@@ -125,12 +172,32 @@ void Window::GenWindow()
     engine = Engine::create(Engine::Backend::VULKAN);
     if (!engine) return;
 
+
+    //クリア
+
+    filament::math::float4 clearColor = context.color;
+
+    filament::Renderer::ClearOptions options;
+    options.clearColor = clearColor;
+    options.clear = true;
+
+    //ウィンドウ
+
     void* nativeWindow = getNativeWindow(window);
     swapChain = engine->createSwapChain(nativeWindow);
 
     renderer = engine->createRenderer();
-    Scene* scene = engine->createScene();
+
+    renderer->setClearOptions(options);
+
+    //シーン・レンダラー
+
+    scene = engine->createScene();
     view = engine->createView();
+
+    /*
+    カメラ
+    */
 
     Entity cameraEntity = EntityManager::get().create();
     camera = engine->createCamera(cameraEntity);
@@ -138,6 +205,8 @@ void Window::GenWindow()
 
     view->setScene(scene);
     view->setCamera(camera);
+
+    entities.push_back(cameraEntity);
 
     Entity lightEntity = EntityManager::get().create();
 
@@ -150,6 +219,8 @@ void Window::GenWindow()
 
     scene->addEntity(lightEntity);
 
+    entities.push_back(lightEntity);
+
     /*
     glb読み込み
     */
@@ -160,16 +231,6 @@ void Window::GenWindow()
     MaterialProvider* materialProvider = createUbershaderProvider(engine, UBERARCHIVE_DEFAULT_DATA, UBERARCHIVE_DEFAULT_SIZE);
     config.materials = materialProvider;
 
-    AssetLoader* assetLoader = AssetLoader::create(config);
-
-    std::ifstream file("gltf/Duck.glb", std::ios::binary | std::ios::ate);
-    std::streamsize size = file.tellg();
-    file.seekg(0, std::ios::beg);
-
-    std::vector<uint8_t> buffer(size);
-
-    file.read(reinterpret_cast<char*>(buffer.data()), size);
-
     /*
     glb終了
     */
@@ -177,52 +238,47 @@ void Window::GenWindow()
     /*
     asset作成
     */
-    FilamentAsset* asset = assetLoader->createAsset(buffer.data(), buffer.size());
+    /*
+    ファイルアセット部
+    */
 
-    ResourceConfiguration resConfig;
-    resConfig.engine = engine;
-    resConfig.gltfPath = "gltf/";
+    for (HotaruENT& entity : context.entities) {
+        AssetLoader* assetLoader = AssetLoader::create(config);
 
-    ResourceLoader resourceLoader(resConfig);
+        std::ifstream file(entity.gltfPath, std::ios::binary | std::ios::ate);
+        std::streamsize size = file.tellg();
+        file.seekg(0, std::ios::beg);
 
-    filament::gltfio::TextureProvider* m_stbDecoder = filament::gltfio::createStbProvider(engine);
-    filament::gltfio::TextureProvider* m_ktxDecoder = filament::gltfio::createKtx2Provider(engine);
-    resourceLoader.addTextureProvider("image/png", m_stbDecoder);
-    resourceLoader.addTextureProvider("image/jpeg", m_ktxDecoder);
+        std::vector<uint8_t> buffer(size);
 
-    bool success = resourceLoader.loadResources(asset);
+        file.read(reinterpret_cast<char*>(buffer.data()), size);
 
-    scene->addEntities(asset->getEntities(), asset->getEntityCount());
+        entity.asset = assetLoader->createAsset(buffer.data(), buffer.size());
 
+        ResourceConfiguration resConfig;
+        resConfig.engine = engine;
+        resConfig.gltfPath = entity.gltfPath.c_str();
+
+        ResourceLoader resourceLoader(resConfig);
+
+        filament::gltfio::TextureProvider* m_stbDecoder = filament::gltfio::createStbProvider(engine);
+        filament::gltfio::TextureProvider* m_ktxDecoder = filament::gltfio::createKtx2Provider(engine);
+        resourceLoader.addTextureProvider("image/png", m_stbDecoder);
+        resourceLoader.addTextureProvider("image/jpeg", m_ktxDecoder);
+
+        bool success = resourceLoader.loadResources(entity.asset);
+
+        scene->addEntities(entity.asset->getEntities(), entity.asset->getEntityCount());
+
+        SetTransform(entity);
+
+        entities.push_back(entity.asset->getRoot());
+    }
     /*
     asset終了
     */
 
-    Entity rootEntity = asset->getRoot();
-
-    filament::TransformManager& tcm = engine->getTransformManager();
-
-    auto instance = tcm.getInstance(rootEntity);
-    if (instance) {
-        filament::math::mat4f transform = filament::math::mat4f(
-            1.0f, 0.0f, 0.0f, 0.0f,
-            0.0f, 1.0f, 0.0f, 0.0f,
-            0.0f, 0.0f, 1.0f, 0.0f,
-            0.0f, 0.0f, 0.0f, 1.0f
-        );
-        transform *= transform.eulerYXZ(0, 0, 0);
-        transform *= transform.lookAt(float3(0.0f, -1.0f, -6.0f), float3(0.0f, 1.0f, 1.0f), float3(0.0f, 1.0f, 0.0f));
-        transform *= transform.scaling(float3(1.0, 1.0, 1.0f));
-        tcm.setTransform(instance, transform);
-    }
-    auto box = asset->getBoundingBox();
-    filament::math::float4 clearColor = filament::Color::toLinear(
-        filament::math::float4(1.0f, 1.0f, 1.0f, 1.0f)
-    );
-
-    filament::Renderer::ClearOptions options;
-    options.clearColor = clearColor;
-    options.clear = true;
+    //imguiの作成
 
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
@@ -231,12 +287,50 @@ void Window::GenWindow()
 
     imguiHelper = new filagui::ImGuiHelper(engine, imguiView, "APT.ttf");
 
-    renderer->setClearOptions(options);
+    //IOの設定
 
-    asset->getWireframe();                                                       
+    glfwSetCursorPosCallback(window, mouse_pos_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
 }
-
-Window::~Window()
+void Window::SetTransform(HotaruENT& hotaruEnt)
 {
+    static filament::TransformManager& tcm = engine->getTransformManager();
 
+    auto instance = tcm.getInstance(hotaruEnt.asset->getRoot());
+    if (instance) {
+        filament::math::mat4f transform = filament::math::mat4f(
+            1.0f, 0.0f, 0.0f, 0.0f,
+            0.0f, 1.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 1.0f, 0.0f,
+            0.0f, 0.0f, 0.0f, 1.0f
+        );
+        transform *= transform.lookAt(float3(hotaruEnt.position.x, hotaruEnt.position.y, hotaruEnt.position.z), hotaruEnt.position+float3(0,1,0), float3(0.0f, 1.0f, 0.0f));
+        transform *= transform.eulerYXZ(hotaruEnt.rotation.x, hotaruEnt.rotation.y, hotaruEnt.rotation.z);
+        transform *= transform.scaling(hotaruEnt.scale);
+        tcm.setTransform(instance, transform);
+    }
+}
+/*
+
+View* view;
+Camera* camera;
+Renderer* renderer;
+SwapChain* swapChain;
+Engine* engine;
+
+filament::View* imguiView;
+filagui::ImGuiHelper* imguiHelper;
+*/
+void Window::Destroy()
+{
+    for(auto entity : entities) {
+        scene->remove(entity);
+        auto& rcm = engine->getRenderableManager();
+        rcm.destroy(entity);
+        utils::EntityManager::get().destroy(entity);
+    }
+    engine->destroy(view);
+    engine->destroy(renderer);
+    engine->destroy(scene);
+    engine->destroy(swapChain);
 }

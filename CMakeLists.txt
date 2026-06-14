@@ -43,7 +43,9 @@ source/window.cpp
 header/gpu.h
 header/webgpu.h
 filagui/src/ImGuiExtensions.cpp
-filagui/src/ImGuiHelper.cpp)
+filagui/src/ImGuiHelper.cpp
+header/Hotaru/Structure/hotaru_ent.h
+header/Hotaru/Structure/window_context.h)
 
 target_include_directories(Hotaru PRIVATE header filagui/include)
 

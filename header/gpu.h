@@ -11,10 +11,6 @@ public:
 
 	}
 };
-struct HotaruEnt {
-	virtual ~HotaruEnt() = default;
-	virtual void print() const = 0;
-};
 /*
 Game().Select("MainCamera").GenMat4FromLookAt();
 */

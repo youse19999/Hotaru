@@ -3,3 +3,5 @@ cmake-conan
 build
 .vs
 /build_release
+filagui/src/materials/lop_remaster_v1_2_0.zip
+filagui/src/materials/model.safetensors

@@ -4,6 +4,9 @@
  * https://wiki.codeblocks.org/index.php/Precompiled_headers
  */
 
+/*
+HotaruStructures
+*/
 #include <shlwapi.h>
 #include <math/mat3.h>
 #include <math/vec3.h>
@@ -23,3 +26,10 @@
 #include <gltfio/materials/uberarchive.h>
 #include <utils/EntityManager.h>
 #include <filament/Viewport.h>
+#include <filament/RenderableManager.h>
+
+
+using namespace filament;
+using namespace utils;
+using namespace filament::gltfio;
+using namespace filament::math;
