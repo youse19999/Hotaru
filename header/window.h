@@ -1,13 +1,33 @@
 #pragma once
 
+/*
+WIN用マクロ
+*/
 #define NOMINMAX
+
+
+/*
+GLFW
+*/
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
+
+/*
+* WINのヘッダー
+*/
 #include <Windows.h>
 #include <memory>
+
+
 #include <observer.h>
 #include <filament_pch.h>
+
+/*
+固有
+*/
+#include <gpu.h>
+#include <console.h>
 
 #include <Hotaru/Structure/hotaru_ent.h>
 #include <Hotaru/Structure/window_context.h>
@@ -41,6 +61,8 @@ public:
 	void GenWindow(WindowContext& context);
 	void Destroy();
 	void SetTransform(HotaruENT& hotaruEnt);
+	void SetTransform(HotaruENT& hotaruEnt,Entity entity);
+	Camera* GetCamera();
 
 	GLFWwindow* window;
 };

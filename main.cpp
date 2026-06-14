@@ -1,9 +1,6 @@
 #include <Windows.h>
 #include "header/observer.h"
-#include <console.h>
 #include <window.h>
-#include <gpu.h>
-#include <command.h>
 std::unique_ptr<Console> console;
 std::unique_ptr<Window> window;
 std::unique_ptr<HotaruGPU> gpu;
@@ -20,20 +17,52 @@ int main()
     context.width = 800;
     context.height = 600;
     context.color = filament::Color::toLinear(
-        filament::math::float4(1.0f, 0.0f, 0.0f, 1.0f)
+        filament::math::float4(0.0f, 0.0f, 0.0f, 1.0f)
     );
 
-    HotaruENT ent;
-    ent.gltfPath = "gltf/monkey.glb";
-    HotaruENT ent2;
-    ent2.gltfPath = "gltf/Duck.glb";
-    HotaruENT ent3;
-    ent3.gltfPath = "gltf/Girl.glb";
+    /*
+    ワールド生成
+    */
+    HotaruENT monkey;
+    monkey.scale = float3(1, 1, 1);
+    monkey.position = float3(1, 0, 0);
+    monkey.gltfPath = "gltf/monkey.glb";
+    monkey.factoryType = HotaruENTFactoryType::Model;
 
-    //ここで所有権が移ってしまうよ
-    context.entities["monkey"] = std::move(ent);
-    context.entities["duck"] = std::move(ent2);
-    context.entities["girl"] = std::move(ent3);
+    HotaruENT girl;
+    girl.scale = float3(1, 1, 1);
+    girl.position = float3(-2, 5, -2);
+    girl.rotation = float3(-1.5f, 0, 0);
+    girl.gltfPath = "gltf/girl_anim.glb";
+    girl.factoryType = HotaruENTFactoryType::Model;
+
+    HotaruENT camera;
+    camera.scale = float3(1, 1, 1);
+    camera.position = float3(0, -5, 0);
+    camera.gltfPath = "gltf/monkey.glb";
+    camera.factoryType = HotaruENTFactoryType::Model;
+
+    HotaruENT light;
+    light.scale = float3(1, 1, 2);
+    light.position = float3(-5,0,0);
+    light.lightType = LightManager::Type::POINT;
+    light.factoryType = HotaruENTFactoryType::Light;
+
+    HotaruENT ground;
+    ground.gltfPath = "gltf/ground.glb";
+    ground.position = float3(0, 0, -3);
+    ground.scale = float3(1, 1, 1);
+    ground.factoryType = HotaruENTFactoryType::Model;
+
+    /*
+    所有権移動＋登録
+    */
+
+    context.entities["monkey"] = std::move(monkey);
+    context.entities["ground"] = std::move(ground);
+    context.entities["camera"] = std::move(camera);
+    context.entities["light"] = std::move(light);
+    context.entities["girl"] = std::move(girl);
 
     window->GenWindow(context);
 
@@ -41,8 +70,10 @@ int main()
 
     while (loop)
     {
-        std::move(context.entities["duck"]).scale = float3(1, 1, 1);
-        std::move(context.entities["duck"]).position -= float3(0, 0, 0.01f);
+        window->SetTransform(context.entities["camera"], window->GetCamera()->getEntity());
+
+        std::move(context.entities["monkey"]).scale = float3(1, 1, 1);
+        //std::move(context.entities["monkey"]).position -= float3(0, 0, 0.01f);
         loop = !window->Render(context);
     }
     window->Destroy();
