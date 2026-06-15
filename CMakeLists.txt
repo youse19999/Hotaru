@@ -13,23 +13,25 @@ endif()
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-set(FILAMENT_DIR "./filament")
-set(PHYSX_DIR "./physx")
-
-include_directories("${FILAMENT_DIR}/include")
+set(PHYSX_DIR "physx")
 
 include_directories("${PHYSX_DIR}/include")
 
 string(TOUPPER "${CMAKE_BUILD_TYPE}" UPPERCASE_BUILD_TYPE)
 
-if (CMAKE_BUILD_TYPE STREQUAL "Release")
-set(FILAMENT_LIB_DIR "${FILAMENT_DIR}/lib/x86_64/mt")
-else()
-set(FILAMENT_LIB_DIR "${FILAMENT_DIR}/lib/x86_64/mtd")
-endif()
+#filament
+include(FetchContent)
 
+FetchContent_Declare(
+    filament
+    GIT_REPOSITORY https://github.com/google/filament.git
+    GIT_TAG        v1.51.0
+)
 
+set(FILAMENT_BUILD_FILAMAT OFF CACHE BOOL "" FORCE)
+set(FILAMENT_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
+
+FetchContent_MakeAvailable(filament)
 
 set(PHYSX_LIB_DIR "${PHYSX_DIR}/lib")
 
@@ -52,15 +54,12 @@ source/window.cpp
 header/gpu.h
 header/webgpu.h
 header/command.h
-filagui/src/ImGuiExtensions.cpp
-filagui/src/ImGuiHelper.cpp
 header/Hotaru/Structure/hotaru_ent.h
 header/Hotaru/Structure/window_context.h)
 
 target_include_directories(Hotaru PRIVATE header filagui/include)
 
 target_link_libraries(Hotaru PUBLIC pybind11::module
-    abseil
     backend
     basis_transcoder
     bluegl

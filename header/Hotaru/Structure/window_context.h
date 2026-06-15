@@ -1,5 +1,6 @@
 #pragma once
 #include <filament_pch.h>
+#include <unordered_map>
 
 struct WindowContext {
 	std::string window;

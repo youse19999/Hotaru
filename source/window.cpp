@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string>
 #include <command.h>
+#include <materials/uberarchive.h>
 
 extern "C" {
     extern const uint8_t UBERARCHIVE_PACKAGE[];

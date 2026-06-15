@@ -23,7 +23,6 @@ HotaruStructures
 #include <gltfio/ResourceLoader.h>
 #include <gltfio/TextureProvider.h>
 #include <gltfio/MaterialProvider.h>
-#include <gltfio/materials/uberarchive.h>
 #include <utils/EntityManager.h>
 #include <filament/Viewport.h>
 #include <filament/RenderableManager.h>
