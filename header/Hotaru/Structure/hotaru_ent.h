@@ -17,4 +17,5 @@ struct HotaruENT
 	HotaruENTFactoryType factoryType;
 	LightManager::Type lightType;
 	float animationTime;
+	bool destroyed;
 };

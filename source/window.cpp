@@ -40,6 +40,7 @@ filament::View* imguiView;
 filagui::ImGuiHelper* imguiHelper;
 
 float deltaTime = 0;
+float gameTime = 0;
 
 auto lastFrameTime = std::chrono::high_resolution_clock::now();
 
@@ -123,31 +124,8 @@ bool Window::Render(WindowContext& context)
         ImGui::Text(std::format("dt: {}",deltaTime).c_str());
         ImGui::Text(std::format("entcnt: {}", engine->getEntityManager().getAliveEntities().size()).c_str());
         ImGui::End();
-
+        GameProcess(context,true);
         ImGui::Begin("ANIM");
-        //ゲーム内処理
-        for (auto& entity : context.entities)
-        {
-            //初期化されてないなら
-            if (entity.second.animationTime < -1)
-            {
-                entity.second.animationTime = 0;
-            }
-            SetTransform(entity.second);
-            //アニメーション再生
-            if (entity.second.factoryType == HotaruENTFactoryType::Model){
-                auto instance = entity.second.asset->getInstance();
-                gltfio::Animator* animator = instance->getAnimator();
-
-                if (animator->getAnimationCount() > 0) {
-                    animator->applyAnimation(1, entity.second.animationTime);
-                    animator->updateBoneMatrices();
-                    ImGui::Text(std::format("{} t: {}", entity.first, entity.second.animationTime).c_str());
-                }
-
-                entity.second.animationTime += deltaTime;
-            }
-        }
         ImGui::End();
     });
 
@@ -157,7 +135,37 @@ bool Window::Render(WindowContext& context)
         renderer->endFrame();
     }
 
+    gameTime += deltaTime;
+
     return glfwWindowShouldClose(window);
+}
+void Window::GameProcess(WindowContext& context,bool imGuiEnabled)
+{
+    //ゲーム内処理
+    for (auto& entity : context.entities)
+    {
+        //初期化されてないなら
+        if (entity.second.animationTime < -1)
+        {
+            entity.second.animationTime = 0;
+        }
+        SetTransform(entity.second);
+        //アニメーション再生
+        if (entity.second.factoryType == HotaruENTFactoryType::Model) {
+            auto instance = entity.second.asset->getInstance();
+            gltfio::Animator* animator = instance->getAnimator();
+
+            if (animator->getAnimationCount() > 0) {
+                animator->applyAnimation(1, entity.second.animationTime);
+                animator->updateBoneMatrices();
+                if (imGuiEnabled) {
+                    ImGui::Text(std::format("{} t: {}", entity.first, entity.second.animationTime).c_str());
+                }
+            }
+
+            entity.second.animationTime += deltaTime;
+        }
+    }
 }
 void Window::RenderImGUIPos(std::string entityID,WindowContext context)
 {

@@ -65,9 +65,11 @@ public:
 	void SetTransform(HotaruENT& hotaruEnt,Entity entity);
 	void DestroyEntity(Entity entity);
 	void RemoveChildrenEntity(Entity entity);
-	void RenderImGUIPos(std::string entityID, WindowContext context);
 	std::vector<utils::Entity> GetChildren(Entity entity);
 	Camera* GetCamera();
 
 	GLFWwindow* window;
+private:
+	void RenderImGUIPos(std::string entityID, WindowContext context);
+	void GameProcess(WindowContext& context, bool imGuiEnabled);
 };
