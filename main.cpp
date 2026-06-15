@@ -32,7 +32,7 @@ int main()
     HotaruENT girl;
     girl.scale = float3(1, 1, 1);
     girl.position = float3(-2, 5, -2);
-    girl.rotation = float3(-1.5f, 0, 0);
+    girl.rotation = float3(0, 0, 0);
     girl.gltfPath = "gltf/girl_anim.glb";
     girl.factoryType = HotaruENTFactoryType::Model;
 
@@ -65,14 +65,32 @@ int main()
     context.entities["girl"] = std::move(girl);
 
     window->GenWindow(context);
+    window->GenEngine(context);
+
+    static int a = 0;
 
     bool loop = true;
 
     while (loop)
     {
         window->SetTransform(context.entities["camera"], window->GetCamera()->getEntity());
-        std::move(context.entities["monkey"]).rotation -= float3(0, 0, 0.01f);
+        loop = !window->Render(context);
+        if (a > 10000)
+        {
+            loop = false;
+        }
+        a++;
+    }
+    
+    window->DestroyEntity(context.entities["girl"].asset->getRoot());
+
+    loop = true;
+
+    while (loop)
+    {
+        window->SetTransform(context.entities["camera"], window->GetCamera()->getEntity());
         loop = !window->Render(context);
     }
+
     window->Destroy();
 }

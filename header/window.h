@@ -59,10 +59,17 @@ public:
 		std::cerr << description << "\n";
 	}
 	void GenWindow(WindowContext& context);
+	void GenEngine(WindowContext& context);
 	void Destroy();
 	void SetTransform(HotaruENT& hotaruEnt);
 	void SetTransform(HotaruENT& hotaruEnt,Entity entity);
+	void DestroyEntity(Entity entity);
+	void RemoveChildrenEntity(Entity entity);
+	std::vector<utils::Entity> GetChildren(Entity entity);
 	Camera* GetCamera();
 
 	GLFWwindow* window;
+private:
+	void RenderImGUIPos(std::string entityID, WindowContext context);
+	void GameProcess(WindowContext& context, bool imGuiEnabled);
 };
