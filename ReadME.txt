@@ -23,7 +23,7 @@ https://github.com/NVIDIA-Omniverse/PhysX
 filament-~-windows->filament
 ovphysx-windows-x86_64~->physx
 
-のようにbuild.batなおるフォルダーに入れます。
+のようにbuild.batがあるフォルダーに入れます。
 
 リリースビルドの場合
 ・Release.batを使用してください。

@@ -65,6 +65,9 @@ int main()
     context.entities["girl"] = std::move(girl);
 
     window->GenWindow(context);
+    window->GenEngine(context);
+
+    static int a = 0;
 
     bool loop = true;
 
@@ -72,6 +75,22 @@ int main()
     {
         window->SetTransform(context.entities["camera"], window->GetCamera()->getEntity());
         loop = !window->Render(context);
+        if (a > 10000)
+        {
+            loop = false;
+        }
+        a++;
     }
+    
+    window->DestroyEntity(context.entities["girl"].asset->getRoot());
+
+    loop = true;
+
+    while (loop)
+    {
+        window->SetTransform(context.entities["camera"], window->GetCamera()->getEntity());
+        loop = !window->Render(context);
+    }
+
     window->Destroy();
 }

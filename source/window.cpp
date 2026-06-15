@@ -83,6 +83,10 @@ bool Window::Render(WindowContext& context)
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
 
+    /*
+    描画指定
+    */
+
     imguiView->setViewport({ 0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height) });
     
     view->setViewport(filament::Viewport(0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height)));
@@ -97,7 +101,10 @@ bool Window::Render(WindowContext& context)
     if (iconified == GLFW_TRUE) {
         return false;
     }
+
     imguiHelper->setDisplaySize(width, height);
+
+    ImGuiIO& io = ImGui::GetIO();
 
     /*
     位置の設定の表示
@@ -107,34 +114,14 @@ bool Window::Render(WindowContext& context)
         ImGui::Begin("Entity List");
         for (auto& entity : context.entities)
         {
-            if (entity_windows.count(entity.first) == 1)
-            {
-                ImGui::Checkbox(entity.first.c_str(), &entity_windows[entity.first]);
-                if (entity_windows[entity.first]) {
-                    std::string entity_label = entity.first;
-                    ImGui::Text("position");
-                    ImGui::SliderFloat((entity_label + ("_p_x")).c_str(), &entity.second.position.x, -50.0f, 50.0f);
-                    ImGui::SliderFloat((entity_label + ("_p_y")).c_str(), &entity.second.position.y, -50.0f, 50.0f);
-                    ImGui::SliderFloat((entity_label + ("_p_z")).c_str(), &entity.second.position.z, -50.0f, 50.0f);
-                    ImGui::Text("rotation");
-                    ImGui::SliderFloat((entity_label + ("_r_x")).c_str(), &entity.second.rotation.x, -6.28f, 6.28f);
-                    ImGui::SliderFloat((entity_label + ("_r_y")).c_str(), &entity.second.rotation.y, -6.28f, 6.28f);
-                    ImGui::SliderFloat((entity_label + ("_r_z")).c_str(), &entity.second.rotation.z, -6.28f, 6.28f);
-                    ImGui::Text("scale");
-                    ImGui::SliderFloat((entity_label + ("_s_x")).c_str(), &entity.second.scale.x, -5.0f, 5.0f);
-                    ImGui::SliderFloat((entity_label + ("_s_y")).c_str(), &entity.second.scale.y, -5.0f, 5.0f);
-                    ImGui::SliderFloat((entity_label + ("_s_z")).c_str(), &entity.second.scale.z, -5.0f, 5.0f);
-                }
-            }
-            else {
-                entity_windows[entity.first] = false;
-            }
+            RenderImGUIPos(entity.first, context);
         }
         ImGui::End();
 
         ImGui::Begin("DBG");
         ImGui::Text(std::format("X: {}, Y: {}, Z: {}", camera->getPosition().x, camera->getPosition().y, camera->getPosition().z).c_str());
         ImGui::Text(std::format("dt: {}",deltaTime).c_str());
+        ImGui::Text(std::format("entcnt: {}", engine->getEntityManager().getAliveEntities().size()).c_str());
         ImGui::End();
 
         ImGui::Begin("ANIM");
@@ -172,7 +159,31 @@ bool Window::Render(WindowContext& context)
 
     return glfwWindowShouldClose(window);
 }
-
+void Window::RenderImGUIPos(std::string entityID,WindowContext context)
+{
+    if (entity_windows.count(entityID) == 1)
+    {
+        ImGui::Checkbox(entityID.c_str(), &entity_windows[entityID]);
+        if (entity_windows[entityID]) {
+            std::string entity_label = entityID;
+            ImGui::Text("position");
+            ImGui::SliderFloat((entity_label + ("_p_x")).c_str(), &context.entities[entityID].position.x, -50.0f, 50.0f);
+            ImGui::SliderFloat((entity_label + ("_p_y")).c_str(), &context.entities[entityID].position.y, -50.0f, 50.0f);
+            ImGui::SliderFloat((entity_label + ("_p_z")).c_str(), &context.entities[entityID].position.z, -50.0f, 50.0f);
+            ImGui::Text("rotation");
+            ImGui::SliderFloat((entity_label + ("_r_x")).c_str(), &context.entities[entityID].rotation.x, -6.28f, 6.28f);
+            ImGui::SliderFloat((entity_label + ("_r_y")).c_str(), &context.entities[entityID].rotation.y, -6.28f, 6.28f);
+            ImGui::SliderFloat((entity_label + ("_r_z")).c_str(), &context.entities[entityID].rotation.z, -6.28f, 6.28f);
+            ImGui::Text("scale");
+            ImGui::SliderFloat((entity_label + ("_s_x")).c_str(), &context.entities[entityID].scale.x, -5.0f, 5.0f);
+            ImGui::SliderFloat((entity_label + ("_s_y")).c_str(), &context.entities[entityID].scale.y, -5.0f, 5.0f);
+            ImGui::SliderFloat((entity_label + ("_s_z")).c_str(), &context.entities[entityID].scale.z, -5.0f, 5.0f);
+        }
+    }
+    else {
+        entity_windows[entityID] = false;
+    }
+}
 Camera* Window::GetCamera()
 {
     return camera;
@@ -218,7 +229,6 @@ void Window::GenWindow(WindowContext& context)
     if (!window) {
         //glfw停止
         ObserverManager::getInstance().GetLogSubject().notify("WINDOW WAS DEAD");
-        glfwTerminate();
         return;
     }
     ObserverManager::getInstance().GetLogSubject().notify("WINDOW CREATED");
@@ -226,6 +236,16 @@ void Window::GenWindow(WindowContext& context)
     engine = Engine::create(Engine::Backend::VULKAN);
     if (!engine) return;
 
+    //ウィンドウ
+
+    void* nativeWindow = getNativeWindow(window);
+    swapChain = engine->createSwapChain(nativeWindow);
+
+    renderer = engine->createRenderer();
+}
+
+void Window::GenEngine(WindowContext& context)
+{
 
     //クリア
 
@@ -234,13 +254,6 @@ void Window::GenWindow(WindowContext& context)
     filament::Renderer::ClearOptions options;
     options.clearColor = clearColor;
     options.clear = true;
-
-    //ウィンドウ
-
-    void* nativeWindow = getNativeWindow(window);
-    swapChain = engine->createSwapChain(nativeWindow);
-
-    renderer = engine->createRenderer();
 
     renderer->setClearOptions(options);
 
@@ -384,7 +397,9 @@ void Window::SetTransform(HotaruENT& hotaruEnt)
     static filament::TransformManager& tcm = engine->getTransformManager();
 
     TransformManager::Instance instance;
-
+    /*
+    ファクトリごとに受け取り方が違う
+    */
     if (hotaruEnt.factoryType == HotaruENTFactoryType::Model)
     {
         instance = tcm.getInstance(hotaruEnt.asset->getRoot());
@@ -410,6 +425,9 @@ void Window::SetTransform(HotaruENT& hotaruEnt)
         tcm.setTransform(instance, transform);
     }
 }
+/*
+トランスフォーム用の統一した処理
+*/
 void Window::SetTransform(HotaruENT& hotaruEnt,Entity entity)
 {
     static filament::TransformManager& tcm = engine->getTransformManager();
@@ -429,16 +447,49 @@ void Window::SetTransform(HotaruENT& hotaruEnt,Entity entity)
         tcm.setTransform(instance, transform);
     }
 }
+std::vector<utils::Entity> Window::GetChildren(Entity entity)
+{
+    auto& tcm = engine->getTransformManager();
+    size_t childCount = tcm.getChildCount(tcm.getInstance(entity));
+    std::vector<utils::Entity> children(childCount);
+    tcm.getChildren(tcm.getInstance(entity), children.data(), childCount);
+    return children;
+}
+/*
+再帰的に子オブジェクトを消す。
+*/
+void Window::RemoveChildrenEntity(Entity entity)
+{
+    auto& rcm = engine->getRenderableManager();
+    for (auto child : GetChildren(entity))
+    {
+        scene->remove(child);
+        auto& rcm = engine->getRenderableManager();
+        rcm.destroy(child);
+        utils::EntityManager::get().destroy(child);
+        RemoveChildrenEntity(child);
+    }
+}
+/*
+エンティティを削除
+*/
+void Window::DestroyEntity(Entity entity)
+{
+    RemoveChildrenEntity(entity);
+}
+/*
+解放処理
+*/
 void Window::Destroy()
 {
     for(auto entity : entities) {
-        scene->remove(entity.second);
-        auto& rcm = engine->getRenderableManager();
-        rcm.destroy(entity.second);
-        utils::EntityManager::get().destroy(entity.second);
+        //ちゃんと解放されるようになりました。
+        RemoveChildrenEntity(entity.second);
     }
     engine->destroy(view);
     engine->destroy(renderer);
     engine->destroy(scene);
     engine->destroy(swapChain);
+
+    glfwTerminate();
 }
